@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import re
 
 SCHOOL_FEES_PAGES = {
     "Eton College": "https://www.etoncollege.com/admissions/fees/",
@@ -9,7 +10,8 @@ SCHOOL_FEES_PAGES = {
     "Westminster School": "https://www.westminster.org.uk/admissions/fees/"
 }
 
-KEYWORDS = ["fee", "fees", "term", "boarding", "day", "registration", "deposit", "tuition", "per term", "£"]
+# Regex to extract clean fee lines
+FEE_REGEX = re.compile(r"£[0-9,]+(?:\.[0-9]{2})?.*?(term|half|year|annum|per)", re.IGNORECASE)
 
 def fetch_school_fees(school_name):
     url = SCHOOL_FEES_PAGES.get(school_name)
@@ -20,16 +22,21 @@ def fetch_school_fees(school_name):
         response = requests.get(url, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
 
-        fee_lines = []
-        for tag in soup.find_all(["p", "li", "div", "span", "h2", "h3"]):
+        matches = []
+        for tag in soup.find_all(["p", "li", "div", "span"]):
             text = tag.get_text(separator=" ", strip=True)
-            if any(keyword in text.lower() for keyword in KEYWORDS) and "cookie" not in text.lower():
-                fee_lines.append(text)
+            if "£" in text:
+                found = FEE_REGEX.findall(text)
+                if found:
+                    matches.append(text)
+
+        # Remove duplicates and sort by length (shorter = more concise)
+        unique_fees = sorted(set(matches), key=len)
 
         return {
             "school": school_name,
             "url": url,
-            "fees": list(dict.fromkeys(fee_lines)) or ["No fee info found on page."]
+            "fees": unique_fees[:5] or ["No core fees found."]
         }
 
     except Exception as e:
