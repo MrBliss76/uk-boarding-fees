@@ -6,12 +6,12 @@ st.title("💷 UK Boarding School Fees Explorer")
 school = st.selectbox("Select a school", list(SCHOOL_FEES_PAGES.keys()))
 
 if st.button("Fetch Fees"):
-    with st.spinner("Scraping latest fee info..."):
+    with st.spinner("Looking for the main fees..."):
         result = fetch_school_fees(school)
         if "error" in result:
             st.error(result["error"])
         else:
-            st.markdown(f"### 💼 Fees for {school}")
-            st.markdown(f"[🔗 View original source]({result['url']})")
+            st.markdown(f"### 💼 Core Fees for {school}")
+            st.markdown(f"[🔗 View official source]({result['url']})")
             for line in result["fees"]:
-                st.markdown(f"- {line}")
+                st.success(line)
